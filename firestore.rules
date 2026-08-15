@@ -26,6 +26,21 @@ service cloud.firestore {
         get(/databases/$(database)/documents/classes/$(classId)).data.teacherId == request.auth.uid;
     }
 
+    // Like isTeacherOfClass(), but also true when THIS SAME request is the
+    // one creating that class. get() inside rules only sees the database as
+    // it was BEFORE this request's own writes, so when createClass()'s
+    // transaction creates classes/{classId} and its joinCode + seed list
+    // together, the joinCode/list create rules would otherwise see the
+    // class as "not existing yet" and get rejected. getAfter() evaluates as
+    // if every write in this request has already landed, which fixes that.
+    // Only used where a class is created atomically alongside a child doc
+    // (joinCodes, the teacher's seed list) — everywhere else the class
+    // already exists, so plain isTeacherOfClass() is correct as-is.
+    function isTeacherOfClassIncludingPending(classId) {
+      return isSignedIn() &&
+        getAfter(/databases/$(database)/documents/classes/$(classId)).data.teacherId == request.auth.uid;
+    }
+
     function isClassMember(classId) {
       return isSignedIn() &&
         exists(/databases/$(database)/documents/classMembers/$(classId + '_' + request.auth.uid));
@@ -84,7 +99,7 @@ service cloud.firestore {
       allow get: if isSignedIn();
       allow list: if false;
 
-      allow create: if isSignedIn() && isTeacherOfClass(request.resource.data.classId)
+      allow create: if isSignedIn() && isTeacherOfClassIncludingPending(request.resource.data.classId)
         && request.resource.data.keys().hasOnly(['classId']);
 
       allow update: if false;
@@ -141,7 +156,7 @@ service cloud.firestore {
       // (mirrors lists_insert_teacher — a student can never force-add a list).
       allow create: if isSignedIn() && request.resource.data.listType == 'teacher'
         && request.resource.data.ownerId == request.auth.uid
-        && isTeacherOfClass(request.resource.data.classId)
+        && isTeacherOfClassIncludingPending(request.resource.data.classId)
         && request.resource.data.keys().hasOnly(['classId', 'listType', 'ownerId', 'title', 'position', 'createdAt']);
 
       // Student list: only that student, only their own deterministic id,
