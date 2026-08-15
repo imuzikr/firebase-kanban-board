@@ -7,7 +7,7 @@ import { nextPosition, deleteDocsInBatches } from "./helpers";
  *  board-wide lists beyond the auto-seeded "공지사항" one; per-student
  *  lists are still fully automatic, created only by joinClassByCode. */
 export async function createList(classId: string, teacherId: string, title: string): Promise<void> {
-  const position = await nextPosition("lists", "classId", classId);
+  const position = await nextPosition("lists", "classId", classId, { field: "listType", value: "teacher" });
   const listId = doc(collection(db, "lists")).id;
   await setDoc(doc(db, "lists", listId), {
     classId,

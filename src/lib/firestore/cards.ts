@@ -18,7 +18,15 @@ export async function createCard(params: {
   description: string;
   visibility: CardVisibility;
 }): Promise<void> {
-  const position = await nextPosition("cards", "listId", params.listId);
+  // `classId` passed as `extra` too: cards' read rule's first branch
+  // (isTeacherOfClass(card.classId)) depends on classId, which a
+  // listId-only query filter doesn't bind — same "field the rule needs
+  // isn't part of the query" trap as lists' nextPosition() call. Costs
+  // nothing since the caller already has classId.
+  const position = await nextPosition("cards", "listId", params.listId, {
+    field: "classId",
+    value: params.classId,
+  });
   const cardId = doc(collection(db, "cards")).id;
   const now = new Date().toISOString();
   await setDoc(doc(db, "cards", cardId), {

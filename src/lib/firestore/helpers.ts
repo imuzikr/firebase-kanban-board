@@ -3,15 +3,30 @@ import { db } from "@/lib/firebase";
 import { midPosition } from "@/lib/position";
 
 /** Position for a new doc appended at the end of an existing `where(field,
- *  '==', value)` group, ordered by `position`. A plain (non-transactional)
- *  query — Firestore transactions can only read single documents by ID,
- *  not run queries, so this happens just before the transaction that
- *  actually creates the doc. Two creations landing at the exact same
- *  instant could in theory compute the same position; the cost is purely
- *  cosmetic (ambiguous ordering until the next drag), never a correctness
- *  or security issue, so it isn't worth transactional protection. */
-export async function nextPosition(collectionName: string, field: string, value: string): Promise<number> {
-  const q = query(collection(db, collectionName), where(field, "==", value), orderBy("position", "desc"), limit(1));
+ *  '==', value)` group (optionally narrowed further by `extra`), ordered
+ *  by `position`. A plain (non-transactional) query — Firestore
+ *  transactions can only read single documents by ID, not run queries, so
+ *  this happens just before the transaction that actually creates the
+ *  doc. Two creations landing at the exact same instant could in theory
+ *  compute the same position; the cost is purely cosmetic (ambiguous
+ *  ordering until the next drag), never a correctness or security issue,
+ *  so it isn't worth transactional protection.
+ *
+ *  `extra` exists because `lists` reads need it: firestore.rules nests
+ *  isTeacherOfClass()/isClassMember() inside a `listType == '...' &&
+ *  (...)` AND on every branch of that collection's read rule, so a query
+ *  scoped only by `classId` can't be proven safe even for the class's own
+ *  teacher — `listType` has to be part of the query itself. See
+ *  createList() in lib/firestore/lists.ts. */
+export async function nextPosition(
+  collectionName: string,
+  field: string,
+  value: string,
+  extra?: { field: string; value: string },
+): Promise<number> {
+  const constraints = [where(field, "==", value)];
+  if (extra) constraints.push(where(extra.field, "==", extra.value));
+  const q = query(collection(db, collectionName), ...constraints, orderBy("position", "desc"), limit(1));
   const snap = await getDocs(q);
   const last = snap.docs[0]?.data().position as number | undefined;
   return midPosition(last, undefined);
