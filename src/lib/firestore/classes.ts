@@ -133,7 +133,13 @@ export async function joinClassByCode(studentId: string, rawCode: string): Promi
 
   const profileSnap = await getDoc(doc(db, "profiles", studentId));
   const displayName = (profileSnap.data() as { displayName?: string } | undefined)?.displayName ?? "학생";
-  const position = await nextPosition("lists", "classId", classId);
+  // Not nextPosition() here — that queries `lists` broadly by classId with
+  // no listType filter, which firestore.rules can't prove safe for THIS
+  // caller: a brand-new joiner isn't yet a class member, isn't the
+  // teacher, and owns no list yet, so every branch of the read rule
+  // fails. Date.now() sorts after every nextPosition()-derived value
+  // (those stay in the low thousands) without reading anyone else's data.
+  const position = Date.now();
 
   await runTransaction(db, async (tx) => {
     const now = new Date().toISOString();
