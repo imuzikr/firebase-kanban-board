@@ -8,7 +8,7 @@ React + Vite + Firebase(Firestore, Authentication)로 만들어졌고, **자체 
 
 1. [Firebase 콘솔](https://console.firebase.google.com)에서 프로젝트 생성, Authentication(이메일/비밀번호)과 Firestore를 활성화합니다.
 2. `.env.example`을 `.env`로 복사하고, 콘솔의 "프로젝트 설정 > 내 앱"에서 확인할 수 있는 값들을 채웁니다.
-3. 아래 두 파일을 본인 값으로 로컬에서 수정합니다 — 단, **둘 다 커밋하지 않습니다** (실수 방지가 필요하면 `git update-index --skip-worktree firestore.rules .firebaserc`로 두 파일의 로컬 변경을 git이 무시하게 만들 수 있습니다):
+3. 아래 두 파일을 본인 값으로 로컬에서 수정합니다. **이 저장소(또는 fork)를 공개로 유지할 계획이라면 둘 다 커밋하지 마세요** (실수 방지가 필요하면 `git update-index --skip-worktree firestore.rules .firebaserc`로 두 파일의 로컬 변경을 git이 무시하게 만들 수 있습니다). 비공개로 쓸 거라면 그냥 실제 값으로 평범하게 커밋해도 무방합니다:
    - `firestore.rules`의 `teacherEmail()` → 본인이 가입할 실제 교사 이메일
    - `.firebaserc`의 `default` → 1번에서 만든 실제 Firebase 프로젝트 ID
 4. `npx firebase login` 후 `npx firebase deploy --only firestore:rules,firestore:indexes` 로 보안 규칙과 인덱스를 배포합니다.
