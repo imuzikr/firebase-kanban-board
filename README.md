@@ -8,21 +8,11 @@ React + Vite + Firebase(Firestore, Authentication)로 만들어졌고, **자체 
 
 1. [Firebase 콘솔](https://console.firebase.google.com)에서 프로젝트 생성, Authentication(이메일/비밀번호)과 Firestore를 활성화합니다.
 2. `.env.example`을 `.env`로 복사하고, 콘솔의 "프로젝트 설정 > 내 앱"에서 확인할 수 있는 값들을 채웁니다.
-3. 아래 두 파일을 본인 값으로 로컬에서 수정합니다 — 단, **둘 다 커밋하지 않습니다** (자세한 방법은 바로 아래 "로컬 전용 값 관리" 참고):
+3. 아래 두 파일을 본인 값으로 로컬에서 수정합니다 — 단, **둘 다 커밋하지 않습니다** (실수 방지가 필요하면 `git update-index --skip-worktree firestore.rules .firebaserc`로 두 파일의 로컬 변경을 git이 무시하게 만들 수 있습니다):
    - `firestore.rules`의 `teacherEmail()` → 본인이 가입할 실제 교사 이메일
    - `.firebaserc`의 `default` → 1번에서 만든 실제 Firebase 프로젝트 ID
 4. `npx firebase login` 후 `npx firebase deploy --only firestore:rules,firestore:indexes` 로 보안 규칙과 인덱스를 배포합니다.
 5. `npm install && npm run dev` → http://localhost:5173
-
-### 로컬 전용 값 관리 (teacherEmail, 프로젝트 ID)
-
-`firestore.rules`와 `.firebaserc`는 둘 다 git으로 추적되는 파일이라, 로컬에서 실제 값으로 고쳐두면 `git add -A`나 `git commit -a` 한 번에 실수로 같이 커밋될 위험이 있습니다. `.gitignore`는 이미 추적 중인 파일에는 효과가 없으므로, 대신 `--skip-worktree`로 해당 파일에 대한 로컬 변경을 git이 아예 무시하게 만듭니다:
-
-```bash
-git update-index --skip-worktree firestore.rules .firebaserc
-```
-
-이후 두 파일을 실제 값으로 고쳐도 `git status`에 뜨지 않고, `firebase deploy`는 git 상태와 무관하게 디스크의 파일을 그대로 읽어서 배포하므로 정상 동작합니다. 되돌리려면 `git update-index --no-skip-worktree firestore.rules .firebaserc`.
 
 ## 배포 (Vercel)
 
@@ -47,7 +37,7 @@ VITE_USE_FIREBASE_EMULATOR=true npm run dev
 
 ## 배포 전 보안/개인정보 체크리스트
 
-- [ ] `firestore.rules`의 `teacherEmail()`이 placeholder(`teacher@example.com`)가 아닌 실제 이메일로 바뀌어 있는가 — 단, 이 변경 사항은 **커밋하지 않습니다** (공개 저장소에 실제 이메일이 남지 않도록. "로컬 전용 값 관리" 참고).
+- [ ] `firestore.rules`의 `teacherEmail()`이 placeholder(`teacher@example.com`)가 아닌 실제 이메일로 바뀌어 있는가 — 단, 이 변경 사항은 **커밋하지 않습니다** (공개 저장소에 실제 이메일이 남지 않도록. 위 "빠른 시작" 3번 참고).
 - [ ] `.firebaserc`의 `default`가 placeholder(`your-firebase-project-id`)가 아닌 실제 프로젝트 ID로 바뀌어 있는가 — 이것도 마찬가지로 **커밋하지 않습니다**.
 - [ ] `.env`(실제 프로젝트 설정값)가 커밋되지 않았는가 — `.gitignore`가 이미 막고 있지만 확인.
 - [ ] Admin SDK/서비스 계정 키를 전혀 쓰지 않으므로 그런 종류의 비밀키 유출 위험 자체가 없습니다.
