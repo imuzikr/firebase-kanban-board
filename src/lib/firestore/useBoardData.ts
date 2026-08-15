@@ -10,19 +10,20 @@ function toCard(d: { id: string; data: () => unknown }): CardRow {
   return { id: d.id, ...(d.data() as object) } as CardRow;
 }
 
-/** A class board's lists + cards, role-aware. A student never gets broad
- *  query access to another student's list or private teacher-list cards
- *  (see firestore.rules) — Firestore can only allow a `list` query if it
- *  can prove every possible matching document passes the rule from the
- *  query's own filters alone, which means a student has to run several
- *  narrow queries instead of one broad one:
- *   - lists: one query for every teacher-type list in the class, one for
- *     just their own list (`ownerId==uid` is fixed by the filter).
- *   - cards: one query per teacher list for its public-only cards (fans
- *     out — there can be more than one teacher list), one for every card
- *     on their own list.
- *  A teacher's queries stay a single broad one each, since `classId` is
- *  the only filter that condition needs. */
+/** A class board's lists + cards, role-aware. Firestore can only allow a
+ *  `list` query if it can prove every possible matching document passes
+ *  the rule from the query's own filters alone — so narrow queries are
+ *  required wherever a rule branches on a field the query doesn't fix:
+ *   - lists: `isTeacherOfClass()`/`isClassMember()` are nested inside a
+ *     `listType == '...' && (...)` AND on every branch of the rule, so
+ *     BOTH roles must split by listType (teacher: one query per listType,
+ *     no ownerId filter needed since it wants every list; student: same
+ *     split, plus `ownerId==uid` on the student-type query).
+ *   - cards: `isTeacherOfClass(card.classId)` is a standalone top-level OR
+ *     branch, provable from `classId` alone, so the teacher's query stays
+ *     a single broad one; a student still needs several narrow queries
+ *     (one per teacher list for its public-only cards, one for their own
+ *     list's cards) since their branches depend on `list.listType`. */
 export function useBoardData(
   classId: string,
   profile: Profile | null,
@@ -37,11 +38,47 @@ export function useBoardData(
     setListsLoading(true);
 
     if (profile.role === "teacher") {
-      const q = query(collection(db, "lists"), where("classId", "==", classId), orderBy("position"));
-      return onSnapshot(q, (snap) => {
-        setLists(snap.docs.map(toList));
+      // Can't use a single `where('classId','==',classId)` query here —
+      // see firestore.rules' `lists` comment: isTeacherOfClass() is nested
+      // inside a `listType == '...' && (...)` AND on every branch, so
+      // Firestore can't prove the rule without listType being part of the
+      // query itself. Split the same way the student branch below does,
+      // just without an ownerId filter on the student-lists query (the
+      // teacher needs every student's list, not just one).
+      let teacherTypeLists: ListRow[] = [];
+      let studentTypeLists: ListRow[] = [];
+      let gotTeacherType = false;
+      let gotStudentType = false;
+      const publishTeacherView = () => {
+        if (!gotTeacherType || !gotStudentType) return;
+        setLists([...teacherTypeLists, ...studentTypeLists].sort((a, b) => a.position - b.position));
         setListsLoading(false);
+      };
+
+      const teacherTypeQ = query(
+        collection(db, "lists"),
+        where("classId", "==", classId),
+        where("listType", "==", "teacher"),
+      );
+      const studentTypeQ = query(
+        collection(db, "lists"),
+        where("classId", "==", classId),
+        where("listType", "==", "student"),
+      );
+      const unsubTeacherType = onSnapshot(teacherTypeQ, (snap) => {
+        teacherTypeLists = snap.docs.map(toList);
+        gotTeacherType = true;
+        publishTeacherView();
       });
+      const unsubStudentType = onSnapshot(studentTypeQ, (snap) => {
+        studentTypeLists = snap.docs.map(toList);
+        gotStudentType = true;
+        publishTeacherView();
+      });
+      return () => {
+        unsubTeacherType();
+        unsubStudentType();
+      };
     }
 
     let teacherLists: ListRow[] = [];
