@@ -6,6 +6,9 @@ import { CardItem } from "./CardItem";
 import { AddCardForm } from "./AddCardForm";
 import { deleteList } from "@/lib/firestore/lists";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { pastelListColor } from "@/lib/listColor";
+
+const TEACHER_LIST_COLOR = "border-zinc-200 bg-zinc-100/70 dark:border-zinc-800 dark:bg-zinc-900/60";
 
 export function ListColumn({
   list,
@@ -44,8 +47,10 @@ export function ListColumn({
     });
   }
 
+  const colorClasses = list.listType === "teacher" ? TEACHER_LIST_COLOR : pastelListColor(list.id);
+
   return (
-    <div className="flex h-fit w-64 shrink-0 flex-col rounded-lg border border-zinc-200 bg-zinc-100/70 dark:border-zinc-800 dark:bg-zinc-900/60">
+    <div className={`flex h-fit w-64 shrink-0 flex-col rounded-lg border ${colorClasses}`}>
       <div className="flex items-center justify-between gap-2 px-3 py-2">
         <h3 className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">{list.title}</h3>
         <div className="flex shrink-0 items-center gap-1.5">
