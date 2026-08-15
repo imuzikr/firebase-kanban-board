@@ -2,6 +2,7 @@ import { useState, useTransition } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FirebaseError } from "firebase/app";
 import { signIn } from "@/lib/auth/actions";
+import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 
 function friendlyError(err: unknown): string {
   if (err instanceof FirebaseError) {
@@ -70,6 +71,14 @@ export function LoginPage() {
             {isPending ? "로그인 중..." : "로그인"}
           </button>
         </form>
+
+        <div className="my-4 flex items-center gap-3">
+          <hr className="flex-1 border-zinc-200 dark:border-zinc-700" />
+          <span className="text-xs text-zinc-400 dark:text-zinc-500">또는</span>
+          <hr className="flex-1 border-zinc-200 dark:border-zinc-700" />
+        </div>
+        <GoogleSignInButton />
+
         <p className="mt-4 text-center text-xs text-zinc-500 dark:text-zinc-400">
           계정이 없으신가요?{" "}
           <Link to="/signup" className="text-zinc-900 underline dark:text-zinc-100">

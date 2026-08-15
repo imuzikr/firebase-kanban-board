@@ -6,7 +6,7 @@ React + Vite + Firebase(Firestore, Authentication)로 만들어졌고, **자체 
 
 ## 빠른 시작 (실제 Firebase 프로젝트 사용)
 
-1. [Firebase 콘솔](https://console.firebase.google.com)에서 프로젝트 생성, Authentication(이메일/비밀번호)과 Firestore를 활성화합니다.
+1. [Firebase 콘솔](https://console.firebase.google.com)에서 프로젝트 생성, Authentication(이메일/비밀번호 + Google)과 Firestore를 활성화합니다.
 2. `.env.example`을 `.env`로 복사하고, 콘솔의 "프로젝트 설정 > 내 앱"에서 확인할 수 있는 값들을 채웁니다.
 3. 아래 두 파일을 본인 값으로 로컬에서 수정합니다. **이 저장소(또는 fork)를 공개로 유지할 계획이라면 둘 다 커밋하지 마세요** (실수 방지가 필요하면 `git update-index --skip-worktree firestore.rules .firebaserc`로 두 파일의 로컬 변경을 git이 무시하게 만들 수 있습니다). 비공개로 쓸 거라면 그냥 실제 값으로 평범하게 커밋해도 무방합니다:
    - `firestore.rules`의 `teacherEmail()` → 본인이 가입할 실제 교사 이메일
@@ -22,6 +22,7 @@ React + Vite + Firebase(Firestore, Authentication)로 만들어졌고, **자체 
    `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_APP_ID`, `VITE_USE_FIREBASE_EMULATOR`(`false`), `VITE_TEACHER_EMAIL`
 2. Vite는 빌드 타임에 환경변수를 번들에 굽기 때문에, 값을 추가/수정한 뒤에는 반드시 **재배포**해야 반영됩니다.
 3. Firestore 보안 규칙·인덱스는 Vercel 배포와 무관합니다 — 위 "빠른 시작" 4번대로 Firebase CLI로 별도 배포해야 합니다.
+4. Google 로그인을 쓰려면 Firebase 콘솔 → Authentication → Settings → **Authorized domains**에 Vercel 배포 도메인(예: `your-app.vercel.app`)을 추가해야 합니다 — 등록하지 않으면 `auth/unauthorized-domain` 오류로 팝업이 실패합니다.
 
 Firebase Hosting을 쓰고 싶다면 `firebase.json`에 이미 같은 목적의 rewrite 설정이 되어 있어 `npm run build && npx firebase deploy --only hosting`으로 대신 배포할 수 있습니다.
 
