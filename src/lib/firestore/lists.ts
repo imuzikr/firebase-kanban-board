@@ -1,0 +1,30 @@
+import { collection, doc, getDocs, query, setDoc, where } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { nextPosition, deleteDocsInBatches } from "./helpers";
+
+/** Teacher-only (Firestore rule: listType must be 'teacher', ownerId must
+ *  be the caller, caller must be the class's teacher) — used for extra
+ *  board-wide lists beyond the auto-seeded "공지사항" one; per-student
+ *  lists are still fully automatic, created only by joinClassByCode. */
+export async function createList(classId: string, teacherId: string, title: string): Promise<void> {
+  const position = await nextPosition("lists", "classId", classId);
+  const listId = doc(collection(db, "lists")).id;
+  await setDoc(doc(db, "lists", listId), {
+    classId,
+    listType: "teacher",
+    ownerId: teacherId,
+    title,
+    position,
+    createdAt: new Date().toISOString(),
+  });
+}
+
+/** Teacher-only. Cascades: every card on the list goes with it —
+ *  Firestore has no ON DELETE CASCADE, so cards are deleted first. */
+export async function deleteList(listId: string): Promise<void> {
+  const cardsSnap = await getDocs(query(collection(db, "cards"), where("listId", "==", listId)));
+  await deleteDocsInBatches([
+    ...cardsSnap.docs.map((d) => ({ collectionName: "cards", id: d.id })),
+    { collectionName: "lists", id: listId },
+  ]);
+}

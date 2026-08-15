@@ -1,0 +1,64 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "classes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "teacherId", "order": "ASCENDING" },
+        { "fieldPath": "position", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "lists",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "classId", "order": "ASCENDING" },
+        { "fieldPath": "position", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "lists",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "classId", "order": "ASCENDING" },
+        { "fieldPath": "listType", "order": "ASCENDING" },
+        { "fieldPath": "position", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "lists",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "classId", "order": "ASCENDING" },
+        { "fieldPath": "listType", "order": "ASCENDING" },
+        { "fieldPath": "ownerId", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "cards",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "classId", "order": "ASCENDING" },
+        { "fieldPath": "position", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "cards",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "listId", "order": "ASCENDING" },
+        { "fieldPath": "position", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "cards",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "listId", "order": "ASCENDING" },
+        { "fieldPath": "visibility", "order": "ASCENDING" },
+        { "fieldPath": "position", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}
