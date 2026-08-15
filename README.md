@@ -8,9 +8,32 @@ React + Vite + Firebase(Firestore, Authentication)로 만들어졌고, **자체 
 
 1. [Firebase 콘솔](https://console.firebase.google.com)에서 프로젝트 생성, Authentication(이메일/비밀번호)과 Firestore를 활성화합니다.
 2. `.env.example`을 `.env`로 복사하고, 콘솔의 "프로젝트 설정 > 내 앱"에서 확인할 수 있는 값들을 채웁니다.
-3. `firestore.rules`의 `teacherEmail()`을 본인이 가입할 실제 교사 이메일로 수정합니다(커밋하지 마세요 — 아래 체크리스트 참고).
+3. 아래 두 파일을 본인 값으로 로컬에서 수정합니다 — 단, **둘 다 커밋하지 않습니다** (자세한 방법은 바로 아래 "로컬 전용 값 관리" 참고):
+   - `firestore.rules`의 `teacherEmail()` → 본인이 가입할 실제 교사 이메일
+   - `.firebaserc`의 `default` → 1번에서 만든 실제 Firebase 프로젝트 ID
 4. `npx firebase login` 후 `npx firebase deploy --only firestore:rules,firestore:indexes` 로 보안 규칙과 인덱스를 배포합니다.
 5. `npm install && npm run dev` → http://localhost:5173
+
+### 로컬 전용 값 관리 (teacherEmail, 프로젝트 ID)
+
+`firestore.rules`와 `.firebaserc`는 둘 다 git으로 추적되는 파일이라, 로컬에서 실제 값으로 고쳐두면 `git add -A`나 `git commit -a` 한 번에 실수로 같이 커밋될 위험이 있습니다. `.gitignore`는 이미 추적 중인 파일에는 효과가 없으므로, 대신 `--skip-worktree`로 해당 파일에 대한 로컬 변경을 git이 아예 무시하게 만듭니다:
+
+```bash
+git update-index --skip-worktree firestore.rules .firebaserc
+```
+
+이후 두 파일을 실제 값으로 고쳐도 `git status`에 뜨지 않고, `firebase deploy`는 git 상태와 무관하게 디스크의 파일을 그대로 읽어서 배포하므로 정상 동작합니다. 되돌리려면 `git update-index --no-skip-worktree firestore.rules .firebaserc`.
+
+## 배포 (Vercel)
+
+프론트엔드는 이 저장소를 Vercel에 그대로 import해서 배포할 수 있습니다 (Framework Preset: Vite). SPA 라우팅(React Router)을 위한 rewrite는 `vercel.json`에 이미 포함되어 있습니다.
+
+1. Vercel 프로젝트 → **Settings → Environment Variables**에 `.env.example`과 동일한 키로 실제 값을 등록합니다:
+   `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_APP_ID`, `VITE_USE_FIREBASE_EMULATOR`(`false`), `VITE_TEACHER_EMAIL`
+2. Vite는 빌드 타임에 환경변수를 번들에 굽기 때문에, 값을 추가/수정한 뒤에는 반드시 **재배포**해야 반영됩니다.
+3. Firestore 보안 규칙·인덱스는 Vercel 배포와 무관합니다 — 위 "빠른 시작" 4번대로 Firebase CLI로 별도 배포해야 합니다.
+
+Firebase Hosting을 쓰고 싶다면 `firebase.json`에 이미 같은 목적의 rewrite 설정이 되어 있어 `npm run build && npx firebase deploy --only hosting`으로 대신 배포할 수 있습니다.
 
 ## Firebase 로컬 에뮬레이터 (선택 사항, Java 필요)
 
@@ -24,10 +47,26 @@ VITE_USE_FIREBASE_EMULATOR=true npm run dev
 
 ## 배포 전 보안/개인정보 체크리스트
 
-- [ ] `firestore.rules`의 `teacherEmail()`이 placeholder(`teacher@example.com`)가 아닌 실제 이메일로 바뀌어 있는가 — 단, 이 변경 사항은 **커밋하지 않습니다** (공개 저장소에 실제 이메일이 남지 않도록).
+- [ ] `firestore.rules`의 `teacherEmail()`이 placeholder(`teacher@example.com`)가 아닌 실제 이메일로 바뀌어 있는가 — 단, 이 변경 사항은 **커밋하지 않습니다** (공개 저장소에 실제 이메일이 남지 않도록. "로컬 전용 값 관리" 참고).
+- [ ] `.firebaserc`의 `default`가 placeholder(`your-firebase-project-id`)가 아닌 실제 프로젝트 ID로 바뀌어 있는가 — 이것도 마찬가지로 **커밋하지 않습니다**.
 - [ ] `.env`(실제 프로젝트 설정값)가 커밋되지 않았는가 — `.gitignore`가 이미 막고 있지만 확인.
 - [ ] Admin SDK/서비스 계정 키를 전혀 쓰지 않으므로 그런 종류의 비밀키 유출 위험 자체가 없습니다.
 
 ## 데이터 구조
 
-(작성 예정 — Firestore 컬렉션 스키마와 설계 의도를 여기 정리합니다.)
+Firestore 컬렉션은 아래 6개이고, 상세 필드는 `src/lib/types.ts`에 정의되어 있습니다. `boards` 컬렉션이 따로 없는 이유는 학급:보드가 항상 1:1이라 lists/cards가 `classId`를 직접 참조하기 때문입니다.
+
+| 컬렉션 | 문서 ID | 설명 |
+|---|---|---|
+| `profiles` | `{uid}` | 표시 이름과 역할(`teacher`/`student`). 역할은 가입 시 호출자의 인증된 이메일 클레임을 `firestore.rules`의 `teacherEmail()`과 비교해 **규칙에서만** 결정되며, 이후 절대 바뀌지 않습니다(자가 승격 불가). |
+| `classes` | 자동 생성 | 학급 이름, 담당 교사, 가입 코드, 요일/교시 일정(`schedule`), 대시보드 정렬 순서(`position`). |
+| `joinCodes` | 가입 코드 문자열 자체 | 코드→학급ID 매핑. 코드 자체가 문서 ID라서 조회가 쿼리가 아닌 단일 `get()`이 되고, 학생에게는 목록 조회(list) 권한이 없어 코드를 열거할 수 없습니다. |
+| `classMembers` | `{classId}_{studentId}` | 학급 가입 여부. 결정적(deterministic) ID로 "이미 가입했으면 무시" 동작을 구현합니다. |
+| `lists` | 자동 생성(교사 목록) / `student_{classId}_{studentId}`(학생 목록) | 교사의 공지 목록(`listType: "teacher"`) 또는 학생 개인 목록(`listType: "student"`). 학생 목록의 `title`은 가입 시점의 표시 이름을 그대로 복사해와서, 렌더링할 때 `profiles`를 다시 읽지 않아도 됩니다. |
+| `cards` | 자동 생성 | 카드 내용, 위치(`position`), 공개 여부(`visibility`). 교사 목록 카드만 공개/비공개 의미가 있고, 학생 개인 목록의 카드는 항상 `public`으로 강제됩니다(그 목록 자체가 이미 본인+교사만 볼 수 있으므로). |
+
+접근 제어는 전적으로 `firestore.rules`가 담당합니다 — 학생은 다른 학생의 목록/카드를 절대 읽을 수 없고, 공개 여부는 교사만 바꿀 수 있으며, 자가 승격도 불가능합니다. 각 규칙 옆에 설계 의도가 주석으로 달려 있으니 참고하세요.
+
+## License
+
+[MIT](LICENSE)
