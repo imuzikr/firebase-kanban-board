@@ -1,4 +1,4 @@
-import { collection, doc, getDocs, query, setDoc, where } from "firebase/firestore";
+import { collection, doc, getDocs, query, setDoc, updateDoc, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { nextPosition, deleteDocsInBatches } from "./helpers";
 
@@ -17,6 +17,15 @@ export async function createList(classId: string, teacherId: string, title: stri
     position,
     createdAt: new Date().toISOString(),
   });
+}
+
+/** Teacher-only per the Firestore rule — lets a teacher fix a typo in any
+ *  list's title on their own class's board, including a student's own
+ *  list (e.g. a display-name typo the student can't fix themselves,
+ *  since students never get list-update rights at all). Only `title` is
+ *  writable; listType/ownerId/classId/position stay immutable. */
+export async function updateListTitle(listId: string, title: string): Promise<void> {
+  await updateDoc(doc(db, "lists", listId), { title });
 }
 
 /** Teacher-only. Cascades: every card on the list goes with it —

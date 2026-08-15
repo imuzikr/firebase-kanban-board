@@ -109,6 +109,7 @@ export function Board({
             cards={cardsByList.get(list.id) ?? []}
             classId={classId}
             canModify={canModify(list)}
+            canRename={viewerIsTeacher}
             showVisibilityControls={list.listType === "teacher" && viewerIsTeacher}
           />
         ))}
