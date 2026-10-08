@@ -30,8 +30,13 @@ export async function updateListTitle(listId: string, title: string): Promise<vo
 
 /** Teacher-only. Cascades: every card on the list goes with it —
  *  Firestore has no ON DELETE CASCADE, so cards are deleted first. */
-export async function deleteList(listId: string): Promise<void> {
-  const cardsSnap = await getDocs(query(collection(db, "cards"), where("listId", "==", listId)));
+export async function deleteList(listId: string, classId: string): Promise<void> {
+  // Scope the query by classId so the rules can prove teacher access.
+  const cardsSnap = await getDocs(query(
+    collection(db, "cards"),
+    where("classId", "==", classId),
+    where("listId", "==", listId),
+  ));
   await deleteDocsInBatches([
     ...cardsSnap.docs.map((d) => ({ collectionName: "cards", id: d.id })),
     { collectionName: "lists", id: listId },
