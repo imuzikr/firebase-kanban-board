@@ -46,7 +46,7 @@ export function ListColumn({
     setDeleteError(null);
     startDelete(async () => {
       try {
-        await deleteList(list.id);
+        await deleteList(list.id, classId);
         // no manual state removal needed — the board's onSnapshot
         // listener drops the list as soon as it's deleted.
       } catch (err) {
